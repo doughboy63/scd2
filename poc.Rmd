@@ -1,0 +1,63 @@
+---
+title: "poc"
+author: "smd"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+
+
+```{r}
+setwd("~/GitHub/csv_scd2")
+library(tidyverse)
+library(janitor)
+library(logger)
+library(digest)
+
+
+# dummy data for testing
+extract1 <- read_csv("test_data1.csv") %>% clean_names()
+extract2 <- read_csv("test_data2.csv") %>% clean_names()
+```
+need to develop a hashing function
+
+table: 
+input: key cols
+ 
+ 
+
+```{r}
+
+key_value_hash <- function(df_in, key_cols) {
+  all_cols <- df_in %>%  colnames()
+  value_cols <- setdiff(all_cols, key_cols)
+  
+  if (length(all_cols) == length(value_cols)) {
+    log_fatal("The key columns do not exist in the table!")
+  } else {
+    df_out <- df_in %>% 
+      unite("key_combined", all_of(key_cols), sep = "|", remove = FALSE) %>% 
+      mutate(key_hash = sapply(key_combined, digest, algo = "sha256")) %>% 
+      unite("value_combined", all_of(value_cols), sep = "|", remove = FALSE) %>%
+      mutate(value_hash = sapply(value_combined, digest, algo = "sha256")) %>% 
+      select(-c(key_combined, value_combined))
+  
+    return(df_out)
+  }  
+  
+}
+
+
+```
+
+```{r}
+ky_cols <- c("name")
+
+x <- key_value_hash(extract1, ky_cols)
+
+
+x
+```
+
+

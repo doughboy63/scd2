@@ -1,0 +1,23 @@
+delta load algo pseudo code
+
+to build:
+* hash function
+    takes in a set of cols and hashes the values in each row together
+    
+
+
+table objects:
+* load table
+    - read in from raw extract
+    - mutate add a load date column
+    
+* historic table
+    - holds all key value pairs (raw data and hash values)
+    - has a Effective and Expiry Dates
+      - if the row is active, then the expiry date = 9999/12/31
+
+
+during a load, each historic table row will fall into one of X buckets:
+1. key is not included in load table, so these rows will be untouched
+2. key exists in both the historic and load table
+    - the rows in the historic table will need to be capped (expiry date = load_date less a day)
