@@ -7,7 +7,7 @@ output: html_document
 
 
 
-
+Setup
 ```{r}
 setwd("~/GitHub/csv_scd2")
 library(tidyverse)
@@ -15,23 +15,24 @@ library(janitor)
 library(logger)
 library(digest)
 
+# makes log text colourful
+log_layout(layout_glue_colors)
+```
 
-# dummy data for testing
+pulling in dummy data to test with 
+```{r}
 extract1 <- read_csv("test1.csv", col_types = cols(.default = "c")) %>% 
   clean_names()
 
 extract2 <- read_csv("test2.csv", col_types = cols(.default = "c")) %>% 
   clean_names()
-
 ```
-need to develop a hashing function
-
-table: 
-input: key cols
  
+hashing function to facilitate easy comparisons 
 ```{r}
 
-key_value_hash <- function(df_in, key_cols) {
+
+hash_kv <- function(df_in, key_cols) {
   all_cols <- df_in %>%  colnames()
   value_cols <- setdiff(all_cols, key_cols)
   
@@ -50,50 +51,67 @@ key_value_hash <- function(df_in, key_cols) {
   
 }
 
-
 ```
 
-DO WE NEED TO MAKE SURE THAT BOTH S1 AND S2 HAVE THE SAME CORE COLUMNS BEFORE PROCEEDING????
 
+building test historic and load tables
 ```{r}
-ky_cols <- c("name")
+keys <- c("name")
 
-S1 <- key_value_hash(extract1, ky_cols) %>% 
+df_historic <- hash_kv(extract1, keys)
+
+df_load <- hash_kv(extract2, keys) 
+
+df_all <- bind_rows(df_historic, df_load) %>% 
+  distinct()
+
+
+kv_historic <- df_historic %>% 
   select(key_hash, value_hash) %>% 
-  mutate(effective_date = ymd("2020/01/01")) %>% 
+  mutate(effective_date = ymd("1111/01/01")) %>% 
   mutate(expiry_date = ymd("9999/12/31"))
 
-S2 <- key_value_hash(extract2, ky_cols) %>% 
+kv_load <- df_load %>% 
   select(key_hash, value_hash) %>% 
-  mutate(load_date = ymd("2020/12/31"))
+  mutate(load_date = ymd("2222/01/01"))
+  
 
 ```
+TO DO: need something to check that both the load and historic tables have the correct cols
 
+
+finding all new records in load table
 ```{r}
-new_kv_pairs <- anti_join(S2, S1, by = join_by(key_hash, value_hash)) 
+kv_new <- anti_join(kv_load, kv_historic, by = join_by(key_hash, value_hash))
+
 ```
+TO DO: check to make sure that key only appears once in new_records; if not error out because I won't know which one to use
 
-NEED TO DETECT WHEN KEYS ARE DUPLICATED AND ERROR OUT WHEN THIS HAPPENS!!!!
 
-
+capping records in the historic table where the key has a new value in the load table
 ```{r}
-x <- left_join(S1, new_kv_pairs, by = join_by(key_hash))
-
-capped_records <- x %>% 
+kv_capped <- kv_new %>% 
+  select(key_hash, load_date) %>% 
+  left_join(kv_historic, ., by = join_by(key_hash)) %>% 
   mutate(expiry_date = if_else(is.na(load_date), expiry_date, load_date - days())) %>% 
   select(-load_date)
+  
 ```
 
-
 ```{r}
-new_records <- new_kv_pairs %>% 
-  rename(effective_date = load_date) %>% 
-  mutate(expiry_date = ymd("9999/12/31"))
+df_out <- bind_rows(
+    kv_capped,
+    kv_new %>% 
+      rename(effective_date = load_date) %>% 
+      mutate(expiry_date = ymd("9999/12/31"))
+  ) %>% 
+  arrange(key_hash, effective_date) 
 
-```
 
 
-```{r}
-y <- bind_rows(capped_records, new_records)
+
+# %>% 
+#   left_join(df_all, by = join_by(key_hash, value_hash))
+  
 ```
 
