@@ -19,19 +19,8 @@ library(digest)
 log_layout(layout_glue_colors)
 ```
 
-pulling in dummy data to test with 
-```{r}
-extract1 <- read_csv("test1.csv", col_types = cols(.default = "c")) %>% 
-  clean_names()
-
-extract2 <- read_csv("test2.csv", col_types = cols(.default = "c")) %>% 
-  clean_names()
-```
- 
 hashing function to facilitate easy comparisons 
 ```{r}
-
-
 hash_kv <- function(df_in, key_cols) {
   all_cols <- df_in %>%  colnames()
   value_cols <- setdiff(all_cols, key_cols)
@@ -48,96 +37,71 @@ hash_kv <- function(df_in, key_cols) {
   
     return(df_out)
   }  
-  
 }
 
 ```
 
 
-building test historic and load tables
 ```{r}
+test_data <- read_csv("test_all.csv", show_col_types = FALSE) %>% 
+  clean_names()
+
+pre_historic_data <- test_data %>% 
+  filter(between(id, 1, 10))
+
+pre_load_data <- test_data %>% 
+  filter(between(id, 11, 20))
+
+# need to check for column match before proceeding
+# - does historic have the effective and expiry date columns, current flag, hashes???
+# - does the load table have the matching columns for the historic
+
+
 keys <- c("name")
 
-df_historic <- hash_kv(extract1, keys)
+historic_data <- hash_kv(pre_historic_data, keys)
+load_data <- hash_kv(pre_load_data, keys) 
 
-df_load <- hash_kv(extract2, keys) 
 
-df_all <- bind_rows(df_historic, df_load) %>% 
-  distinct()
 
-kv_historic <- df_historic %>% 
-  select(key_hash, value_hash) %>% 
+
+
+
+
+all_data <- bind_rows(historic_data, load_data)
+
+
+historic_hashes <- historic_data %>% 
+  select(key_hash, value_hash)  %>% 
   mutate(effective_date = ymd("1111/01/01")) %>% 
   mutate(expiry_date = ymd("9999/12/31"))
 
-kv_load <- df_load %>% 
+load_hashes <- load_data %>% 
   select(key_hash, value_hash) %>% 
   mutate(load_date = ymd("2222/01/01"))
-  
+
+# check for hash uniqueness in load key values !!!!!!!!!!
 
 ```
-TO DO: need something to check that both the load and historic tables have the correct cols
 
 
 ```{r}
-kv_historic %>% 
-  group_by(key_hash) %>%
-  summarize(
-    n = n(), 
-    .groups = "drop"
-  ) %>% 
-  filter(n > 1) %>% 
-  nrow()
-  
-```
+new_hashes <- anti_join(load_hashes, historic_hashes, by = join_by(key_hash, value_hash))
 
-
-
-
-finding all new records in load table
-```{r}
-kv_new <- anti_join(kv_load, kv_historic, by = join_by(key_hash, value_hash))
-
-```
-TO DO: check to make sure that key only appears once in new_records; if not error out because I won't know which one to use
-
-
-capping records in the historic table where the key has a new value in the load table
-```{r}
-kv_capped <- kv_new %>% 
+capped_hashes <- new_hashes %>% 
   select(key_hash, load_date) %>% 
-  left_join(kv_historic, ., by = join_by(key_hash)) %>% 
+  left_join(historic_hashes, ., by = join_by(key_hash)) %>% 
   mutate(expiry_date = if_else(is.na(load_date), expiry_date, load_date - days())) %>% 
   select(-load_date)
-  
-```
 
-```{r}
-df_out <- bind_rows(
-    kv_capped,
-    kv_new %>% 
-      rename(effective_date = load_date) %>% 
-      mutate(expiry_date = ymd("9999/12/31"))
-  ) %>% 
-  arrange(key_hash, effective_date) 
-
-
-
-
-# %>% 
-#   left_join(df_all, by = join_by(key_hash, value_hash))
+out <- new_hashes %>% 
+  rename(effective_date = load_date) %>% 
+  mutate(expiry_date = ymd("9999/12/31")) %>% 
+  bind_rows(capped_hashes, .) %>%
+  left_join(., all_data, by = join_by(key_hash, value_hash)) %>% 
+  arrange(name, effective_date) 
   
 ```
 
 
-```{r}
-x <- read_csv("test_all.csv")
-```
-
-```{r}
-x %>% 
-  clean_names() %>% 
-  arrange(name, join_date) %>% 
-  View()
-```
 
