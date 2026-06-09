@@ -56,8 +56,6 @@ test_data <- read_csv("test_all.csv", show_col_types = FALSE) %>%
 ```
 
 
-
-
 ```{r}
 historic_filename <- "historic.csv"
 
@@ -82,14 +80,14 @@ write_csv(init_load_table, load_filename)
 ```
 
 
+user provided inputs:
+* historic file name
+* load file name
+* vector of key columns
+
 
 ```{r}
 key_cols <- c("name")
-
-# does historic file exist?
-
-
-
 
 # checking for historic file.  If I have it, then check that it is well formed.
 have_historic <- file_exists(historic_filename)
@@ -98,13 +96,15 @@ if (have_historic) {
     clean_names()
   
   historic_cols <- colnames(historic_table)
-  required_cols <- c(key_list, "effective_date", "expiry_date", "current_record")
+  required_historic_cols <- c(key_cols, "effective_date", "expiry_date", "current_record")
   
-  if (!all(required_cols %in% historic_cols)) {
+  if (!all(required_historic_cols %in% historic_cols)) {
     log_fatal(paste0("Historic file (", historic_filename, ") is malformed. Table must have all key columns, effective_date, expiry_date, current_record!"))
   } 
   
-  value_cols = setdiff(historic_cols, required_cols)
+  value_cols = setdiff(historic_cols, required_historic_cols)
+} else {
+  log_warning("The historic file targeted (", historic_filename, ") cannot be found!")
 }
 
 # Checking for load file.  If I have it, then check that it is well formed.
@@ -113,85 +113,67 @@ if (have_load) {
   load_table <- read_csv(load_filename, , show_col_types = FALSE) %>% 
     clean_names() 
   
-  if (!all(key_cols %in% col_names(load_table))) {
+  load_cols <- colnames(load_table)
+  
+  if (!all(key_cols %in% load_cols)) {
     log_fatal(paste0("Load file (", load_filename, ") is malformed. Table must have all key columns!"))
   
   } 
 } else {
-  log_fatal("No load file found!")
+  log_fatal("The load file targeted (", load_filename, ") cannot be found!")
 }
 
 # If I don't have a historic file, turn the load file into a historic file. 
 if (!have_historic & have_load) {
-  log_info("No historic table has been found. Converting load table (", load_filename, ") into the historic table.")
+  log_info("Converting load table (", load_filename, ") into the historic table.")
   
   load_table %>%   
   mutate(effective_date = ymd("1111/01/01")) %>% 
   mutate(expiry_date = ymd("9999/12/31")) %>% 
   mutate(current_record = TRUE)
     
-}
-
-
+} else {
+  
+  required_load_cols <- c(key_cols, value_cols)
+  
+  if (!all(required_load_cols %in% load_cols)) {
+    log_fatal(paste0("Load file (", load_filename, ") is malformed. Table must have all key columns!"))
+  }
+  
+  hashed_load_table <- load_table %>% 
+    mutate(load_date = ymd("2222/01/01")) %>% 
+    make_hash(key_cols)
+  
+  hashed_historic_table <- historic_table %>% 
+    make_hash(key_cols)
+  
+  key_value_lookup <- bind_rows(hashed_historic_table, hashed_load_table) %>% 
+    select(-c(effective_date, expiry_date, current_record, load_date))
   
   
-
-
-# if there is no historic table turn the load table into the historic if it is there, if not error out
-
-# do they both have the same key column
-# do they both have 
-
-# does historic table exist?
-# does it have effective and expiry dates
-
-
-
-
-
-
-
-
-
-
-# need to check for column match before proceeding
-# - does historic have the effective and expiry date columns, current flag, hashes???
-# - does the load table have the matching columns for the historic
-
-
-historic_hashes <- historic_table %>% 
+  
+  historic_hashes <- hashed_historic_table %>% 
   select(key_hash, value_hash, effective_date, expiry_date)  
 
-load_hashes <- load_table %>% 
+  load_hashes <- hashed_load_table %>% 
   select(key_hash, value_hash, load_date) 
-
-# check for hash uniqueness in load key values !!!!!!!!!!
-
-```
-
-
-```{r}
-new_hashes <- anti_join(load_hashes, historic_hashes, by = join_by(key_hash, value_hash))
-
-capped_hashes <- new_hashes %>% 
-  select(key_hash, load_date) %>% 
-  left_join(historic_hashes, ., by = join_by(key_hash)) %>% 
-  mutate(expiry_date = if_else(is.na(load_date), expiry_date, load_date - days())) %>% 
-  select(-load_date)
-
-out <- new_hashes %>% 
-  rename(effective_date = load_date) %>% 
-  mutate(expiry_date = ymd("9999/12/31")) %>% 
-  bind_rows(capped_hashes, .) %>%
-  left_join(., all_data, by = join_by(key_hash, value_hash)) %>% 
-  mutate(current_record = expiry_date == ymd("9999/12/31")) %>% 
-  arrange(name, effective_date) 
-
-
-# add Current Record boolean!!!!
-
   
+  new_hashes <- anti_join(load_hashes, historic_hashes, by = join_by(key_hash, value_hash))
+
+  capped_hashes <- new_hashes %>% 
+    select(key_hash, load_date) %>% 
+    left_join(historic_hashes, ., by = join_by(key_hash)) %>% 
+    mutate(expiry_date = if_else(is.na(load_date), expiry_date, load_date - days())) %>% 
+    select(-load_date)
+  
+  out <- new_hashes %>% 
+    rename(effective_date = load_date) %>% 
+    mutate(expiry_date = ymd("9999/12/31")) %>% 
+    bind_rows(capped_hashes, .) %>%
+    left_join(., key_value_lookup, by = join_by(key_hash, value_hash)) %>% 
+    mutate(current_record = expiry_date == ymd("9999/12/31")) %>% 
+    arrange(name, effective_date) 
+  
+}
 ```
-
-
 
