@@ -1,0 +1,11 @@
+id,name,join_date,department,performance_score,monthly_sales,effective_date,expiry_date
+1,Liam Smith,1/15/2023,Engineering,8.5,0,1111-01-01,9999-12-31
+2,Noah Johnson,11/4/2022,Sales,7.2,4100,1111-01-01,9999-12-31
+3,Oliver Williams,2/19/2024,Marketing,9.1,0,1111-01-01,9999-12-31
+4,Elijah Brown,5/23/2021,Finance,6.8,0,1111-01-01,9999-12-31
+5,James Jones,7/11/2023,Sales,8,5100,1111-01-01,9999-12-31
+6,William Garcia,9/30/2022,Finance,7.9,0,1111-01-01,9999-12-31
+7,Benjamin Miller,1/8/2025,Engineering,8.4,0,1111-01-01,9999-12-31
+8,Lucas Davis,3/14/2023,Sales,5.5,2800,1111-01-01,9999-12-31
+9,Henry Rodriguez,12/12/2021,Marketing,8.8,0,1111-01-01,9999-12-31
+10,Alexander Martinez,6/1/2024,Support,7.1,0,1111-01-01,9999-12-31

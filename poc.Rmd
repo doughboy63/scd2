@@ -10,10 +10,11 @@ output: html_document
 Setup
 ```{r}
 setwd("~/GitHub/csv_scd2")
-library(tidyverse)
-library(janitor)
+library(tidyverse)  # data manipulation
+library(janitor)    # cleaning up names
 library(logger)
-library(digest)
+library(digest)     # SHA256 hashing
+library(fs)         # file manipulation
 
 # makes log text colourful
 log_layout(layout_glue_colors)
@@ -21,21 +22,26 @@ log_layout(layout_glue_colors)
 
 hashing function to facilitate easy comparisons 
 ```{r}
-hash_kv <- function(df_in, key_cols) {
-  all_cols <- df_in %>%  colnames()
+make_hash <- function(.data, key_cols) {
+  ignore_cols <- c("effective_date", "expiry_date", "load_date")
+  
+  all_cols <- .data %>%  
+    colnames() %>% 
+    setdiff(ignore_cols)
+  
   value_cols <- setdiff(all_cols, key_cols)
   
   if (length(all_cols) == length(value_cols)) {
     log_fatal("The key columns do not exist in the table!")
   } else {
-    df_out <- df_in %>% 
+    .data <- .data %>% 
       unite("key_combined", all_of(key_cols), sep = "|", remove = FALSE) %>% 
       mutate(key_hash = sapply(key_combined, digest, algo = "sha256")) %>% 
       unite("value_combined", all_of(value_cols), sep = "|", remove = FALSE) %>%
       mutate(value_hash = sapply(value_combined, digest, algo = "sha256")) %>% 
       select(-c(key_combined, value_combined))
   
-    return(df_out)
+    return(.data)
   }  
 }
 
@@ -43,42 +49,99 @@ hash_kv <- function(df_in, key_cols) {
 
 
 ```{r}
+
 test_data <- read_csv("test_all.csv", show_col_types = FALSE) %>% 
   clean_names()
 
-pre_historic_data <- test_data %>% 
-  filter(between(id, 1, 10))
+```
 
-pre_load_data <- test_data %>% 
+
+
+
+```{r}
+historic_filename <- "historic.csv"
+
+init_historic_table <- test_data %>% 
+  filter(between(id, 1, 10)) %>%   
+  mutate(effective_date = ymd("1111/01/01")) %>% 
+  mutate(expiry_date = ymd("9999/12/31"))
+
+write_csv(init_historic_table, historic_filename)
+  
+```
+
+```{r}
+load_filename <- "load.csv"
+
+init_load_table <- test_data %>% 
   filter(between(id, 11, 20))
+
+write_csv(init_load_table, load_filename)
+
+```
+
+
+
+```{r}
+
+# does historic file exist?
+
+if (file_exists(historic_filename)) {
+  historic_table <- read_csv(historic_filename)
+  
+  # FORM CHECKS!!!
+} else {
+  log_warning(paste0("Historic file ", historic_filename, "not be found."))
+}
+
+if (file_exists(load_filename)) {
+  load_table <- read_csv(load_filename) %>% 
+    mutate(load_date = ymd("2222,01,01"))
+  
+  # FORM CHECKS!!!
+} else {
+  log_warning(paste0("Load file ", load_filename, "not found."))
+}
+
+# if there is no historic table turn the load table into the historic if it is there, if not error out
+
+# do they both have the same key column
+# do they both have 
+
+# does historic table exist?
+# does it have effective and expiry dates
+
+
+
+
+
+key_list <- c("name")
+
+
+historic_table <- test_data %>% 
+  filter(between(id, 3, 10)) %>%   
+  mutate(effective_date = ymd("1111/01/01")) %>% 
+  mutate(expiry_date = ymd("9999/12/31")) %>% 
+  make_hash(key_list)
+
+
+
+
+  mutate(load_date = ymd("2222/01/01")) %>% 
+  make_hash(key_list)
+
+
 
 # need to check for column match before proceeding
 # - does historic have the effective and expiry date columns, current flag, hashes???
 # - does the load table have the matching columns for the historic
 
 
-keys <- c("name")
+historic_hashes <- historic_table %>% 
+  select(key_hash, value_hash, effective_date, expiry_date)  
 
-historic_data <- hash_kv(pre_historic_data, keys)
-load_data <- hash_kv(pre_load_data, keys) 
-
-
-
-
-
-
-
-all_data <- bind_rows(historic_data, load_data)
-
-
-historic_hashes <- historic_data %>% 
-  select(key_hash, value_hash)  %>% 
-  mutate(effective_date = ymd("1111/01/01")) %>% 
-  mutate(expiry_date = ymd("9999/12/31"))
-
-load_hashes <- load_data %>% 
-  select(key_hash, value_hash) %>% 
-  mutate(load_date = ymd("2222/01/01"))
+load_hashes <- load_table %>% 
+  select(key_hash, value_hash, load_date) 
 
 # check for hash uniqueness in load key values !!!!!!!!!!
 
@@ -99,7 +162,12 @@ out <- new_hashes %>%
   mutate(expiry_date = ymd("9999/12/31")) %>% 
   bind_rows(capped_hashes, .) %>%
   left_join(., all_data, by = join_by(key_hash, value_hash)) %>% 
+  mutate(current_record = expiry_date == ymd("9999/12/31")) %>% 
   arrange(name, effective_date) 
+
+
+# add Current Record boolean!!!!
+
   
 ```
 

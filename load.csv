@@ -1,0 +1,11 @@
+id,name,join_date,department,performance_score,monthly_sales
+11,Mia Hernandez,8/24/2023,HR,9.5,0
+12,Ava Lopez,4/17/2022,HR,6.2,0
+13,Gonzalez Isabella,10/9/2021,Engineering,8.3,0
+14,Sophia Wilson,11/12/2024,Marketing,7.6,0
+15,Charlotte Anderson,5/19/2023,Sales,4.9,1900
+16,Amelia Thomas,7/22/2022,Support,8.1,0
+17,Emma Taylor,2/28/2025,Marketing,6.9,0
+18,Harper Moore,3/5/2021,Engineering,9,0
+19,Evelyn Jackson,10/15/2023,Sales,7.4,3400
+20,Abigail Martin,1/22/2024,Finance,8.2,0
