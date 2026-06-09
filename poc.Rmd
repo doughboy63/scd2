@@ -64,7 +64,8 @@ historic_filename <- "historic.csv"
 init_historic_table <- test_data %>% 
   filter(between(id, 1, 10)) %>%   
   mutate(effective_date = ymd("1111/01/01")) %>% 
-  mutate(expiry_date = ymd("9999/12/31"))
+  mutate(expiry_date = ymd("9999/12/31")) %>% 
+  mutate(current_record = TRUE)
 
 write_csv(init_historic_table, historic_filename)
   
@@ -83,25 +84,58 @@ write_csv(init_load_table, load_filename)
 
 
 ```{r}
+key_cols <- c("name")
 
 # does historic file exist?
 
-if (file_exists(historic_filename)) {
-  historic_table <- read_csv(historic_filename)
+
+
+
+# checking for historic file.  If I have it, then check that it is well formed.
+have_historic <- file_exists(historic_filename)
+if (have_historic) {
+  historic_table <- read_csv(historic_filename, show_col_types = FALSE) %>% 
+    clean_names()
   
-  # FORM CHECKS!!!
-} else {
-  log_warning(paste0("Historic file ", historic_filename, "not be found."))
+  historic_cols <- colnames(historic_table)
+  required_cols <- c(key_list, "effective_date", "expiry_date", "current_record")
+  
+  if (!all(required_cols %in% historic_cols)) {
+    log_fatal(paste0("Historic file (", historic_filename, ") is malformed. Table must have all key columns, effective_date, expiry_date, current_record!"))
+  } 
+  
+  value_cols = setdiff(historic_cols, required_cols)
 }
 
-if (file_exists(load_filename)) {
-  load_table <- read_csv(load_filename) %>% 
-    mutate(load_date = ymd("2222,01,01"))
+# Checking for load file.  If I have it, then check that it is well formed.
+have_load <- file_exists(load_filename)
+if (have_load) {
+  load_table <- read_csv(load_filename, , show_col_types = FALSE) %>% 
+    clean_names() 
   
-  # FORM CHECKS!!!
+  if (!all(key_cols %in% col_names(load_table))) {
+    log_fatal(paste0("Load file (", load_filename, ") is malformed. Table must have all key columns!"))
+  
+  } 
 } else {
-  log_warning(paste0("Load file ", load_filename, "not found."))
+  log_fatal("No load file found!")
 }
+
+# If I don't have a historic file, turn the load file into a historic file. 
+if (!have_historic & have_load) {
+  log_info("No historic table has been found. Converting load table (", load_filename, ") into the historic table.")
+  
+  load_table %>%   
+  mutate(effective_date = ymd("1111/01/01")) %>% 
+  mutate(expiry_date = ymd("9999/12/31")) %>% 
+  mutate(current_record = TRUE)
+    
+}
+
+
+  
+  
+
 
 # if there is no historic table turn the load table into the historic if it is there, if not error out
 
@@ -115,20 +149,8 @@ if (file_exists(load_filename)) {
 
 
 
-key_list <- c("name")
 
 
-historic_table <- test_data %>% 
-  filter(between(id, 3, 10)) %>%   
-  mutate(effective_date = ymd("1111/01/01")) %>% 
-  mutate(expiry_date = ymd("9999/12/31")) %>% 
-  make_hash(key_list)
-
-
-
-
-  mutate(load_date = ymd("2222/01/01")) %>% 
-  make_hash(key_list)
 
 
 
