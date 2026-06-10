@@ -1,4 +1,10 @@
 id,name,join_date,department,performance_score,monthly_sales
+15,Charlotte Anderson,5/19/2023,Sales,4.9,1900
+16,Amelia Thomas,7/22/2022,Support,8.1,0
+17,Emma Taylor,2/28/2025,Marketing,6.9,0
+18,Harper Moore,3/5/2021,Engineering,9,0
+19,Evelyn Jackson,10/15/2023,Sales,7.4,3400
+20,Abigail Martin,1/22/2024,Finance,8.2,0
 21,Emily Lee,8/11/2022,Support,7,0
 22,Elizabeth Perez,12/5/2023,Marketing,5.8,0
 23,Sofia Thompson,6/30/2021,Sales,8.9,5800
@@ -9,13 +15,3 @@ id,name,join_date,department,performance_score,monthly_sales
 28,Victoria Ramirez,11/27/2021,Support,8,0
 29,Aria Lewis,7/19/2024,Marketing,9.2,0
 30,Grace Robinson,5/4/2022,Engineering,6.1,0
-31,Liam Smith,1/15/2023,Sales,8.5,4200
-32,Noah Johnson,11/4/2022,Marketing,7.2,0
-33,Bella Allen,9/30/2024,Finance,8.7,0
-34,Luna King,12/25/2022,Support,5.9,0
-35,Nya Wright,6/8/2023,Sales,7.2,3100
-36,Zara Scott,4/12/2021,Engineering,9.4,0
-37,Maya Torres,4/1/2025,Marketing,6.6,0
-38,Lila Nguyen,10/19/2022,Finance,8.1,0
-39,James Jones,7/11/2023,Support,8,0
-40,Mila Flores,1/30/2023,Support,7,0

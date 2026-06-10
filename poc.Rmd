@@ -73,7 +73,7 @@ write_csv(init_historic_table, historic_filename)
 load_filename <- "load.csv"
 
 init_load_table <- test_data %>% 
-  filter(between(id, 11, 20))
+  filter(between(id, 21, 40))
 
 write_csv(init_load_table, load_filename)
 
@@ -89,7 +89,7 @@ user provided inputs:
 ```{r}
 key_cols <- c("name")
 
-# checking for historic file.  If I have it, then check that it is well formed.
+# Checking for historic file.  If I have it, then check that it is well formed.
 have_historic <- file_exists(historic_filename)
 if (have_historic) {
   historic_table <- read_csv(historic_filename, show_col_types = FALSE) %>% 
@@ -149,8 +149,6 @@ if (!have_historic & have_load) {
   
   key_value_lookup <- bind_rows(hashed_historic_table, hashed_load_table) %>% 
     select(-c(effective_date, expiry_date, current_record, load_date))
-  
-  
   
   historic_hashes <- hashed_historic_table %>% 
   select(key_hash, value_hash, effective_date, expiry_date)  
