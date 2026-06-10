@@ -2,18 +2,14 @@
 source("~/GitHub/csv_scd2/testing/preamble.R")
 source("~/GitHub/csv_scd2/testing/hash.R")
 
-historic_file <- ""
-load_file <- "load1.csv"
 key_cols <- "name"
+historic_file <- ""
 run_date <- ymd("2026/01/01")
 
-source("~/GitHub/csv_scd2/testing/body.R")
-
-write_csv(out, "historic-init.csv")
-
-historic_file <- "historic-init.csv"
-load_file <- "load2.csv"
-key_cols <- "name"
-run_date <- ymd("2026/01/15")
-
-source("~/GitHub/csv_scd2/testing/body.R")
+for (i in 1:6) {
+  run_date <- run_date + days(10)
+  load_file <- paste0("load", i, ".csv")
+  source("~/GitHub/csv_scd2/testing/body.R")
+  historic_file <- paste0("historic", i, ".csv")
+  write_excel_csv(out, historic_file)
+}

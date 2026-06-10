@@ -3,7 +3,7 @@
 
 
 # adjust as needed
-setwd("~/GitHub/csv_scd2")
+setwd("~/GitHub/csv_scd2/testing")
 
 # Setup ------------------------------------------------------------------------
 
@@ -25,11 +25,11 @@ log_layout(layout_glue_colors)
 
 # hash function allows to easy comparison of key and value columns
 make_hash <- function(.data, key_cols) {
-  ignore_cols <- c("effective_date", "expiry_date", "load_date")
+  ignore_cols <- c("effective_date", "expiry_date", "load_date", "current_record")
   
   all_cols <- .data %>%  
     colnames() %>% 
-    setdiff(ignore_cols)
+    setdiff(ignore_cols) 
   
   value_cols <- setdiff(all_cols, key_cols)
   
@@ -48,9 +48,7 @@ make_hash <- function(.data, key_cols) {
 }
 
 
-
 csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
-  
   if (!is.Date(run_date)) {
     log_fatal("The run_date parameter is not a date!")
   }
@@ -59,7 +57,7 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
   have_historic <- file_exists(historic_file)
   if (have_historic) {
     historic_table <- read_csv(historic_file, show_col_types = FALSE) %>% 
-      clean_names()
+      clean_names() 
     
     historic_cols <- colnames(historic_table)
     required_historic_cols <- c(key_cols, "effective_date", "expiry_date", "current_record")
@@ -76,7 +74,7 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
   # Checking for load file.  If I have it, then check that it is well formed.
   have_load <- file_exists(load_file)
   if (have_load) {
-    load_table <- read_csv(load_file, , show_col_types = FALSE) %>% 
+    load_table <- read_csv(load_file, show_col_types = FALSE) %>% 
       clean_names() 
     
     load_cols <- colnames(load_table)
@@ -96,7 +94,7 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
   if (!have_historic & have_load) {
     log_info("Converting load table (", load_file, ") into the historic table.")
     
-    load_table %>%   
+    out <- load_table %>%   
       mutate(effective_date = run_date) %>% 
       mutate(expiry_date = INF_DATE) %>% 
       mutate(current_record = TRUE)
@@ -117,7 +115,8 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
       make_hash(key_cols)
     
     key_value_lookup <- bind_rows(hashed_historic_table, hashed_load_table) %>% 
-      select(-c(effective_date, expiry_date, current_record, load_date))
+      select(-c(effective_date, expiry_date, current_record, load_date)) %>% 
+      distinct()
     
     historic_hashes <- hashed_historic_table %>% 
       select(key_hash, value_hash, effective_date, expiry_date)  
@@ -136,12 +135,16 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
     out <- new_hashes %>% 
       rename(effective_date = load_date) %>% 
       mutate(expiry_date = INF_DATE) %>% 
-      bind_rows(capped_hashes, .) %>%
+      bind_rows(capped_hashes, .) %>% 
       left_join(., key_value_lookup, by = join_by(key_hash, value_hash)) %>% 
-      mutate(current_record = expiry_date == INF_DATE) %>% 
-      arrange(name, effective_date) 
+      arrange(key_hash, effective_date) %>% 
+      select(-c(key_hash, value_hash)) %>% 
+      mutate(current_record = expiry_date == INF_DATE) %>%  
+      relocate(c("effective_date", "expiry_date", "current_record"), .after = last_col())
     
     return(out)
-    
   }
+    
+    
 }
+

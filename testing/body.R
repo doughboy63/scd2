@@ -12,7 +12,7 @@ if (!is.Date(run_date)) {
 have_historic <- file_exists(historic_file)
 if (have_historic) {
   historic_table <- read_csv(historic_file, show_col_types = FALSE) %>% 
-    clean_names()
+    clean_names() 
   
   historic_cols <- colnames(historic_table)
   required_historic_cols <- c(key_cols, "effective_date", "expiry_date", "current_record")
@@ -29,7 +29,7 @@ if (have_historic) {
 # Checking for load file.  If I have it, then check that it is well formed.
 have_load <- file_exists(load_file)
 if (have_load) {
-  load_table <- read_csv(load_file, , show_col_types = FALSE) %>% 
+  load_table <- read_csv(load_file, show_col_types = FALSE) %>% 
     clean_names() 
   
   load_cols <- colnames(load_table)
@@ -70,7 +70,8 @@ if (!have_historic & have_load) {
     make_hash(key_cols)
   
   key_value_lookup <- bind_rows(hashed_historic_table, hashed_load_table) %>% 
-    select(-c(effective_date, expiry_date, current_record, load_date))
+    select(-c(effective_date, expiry_date, current_record, load_date)) %>% 
+    distinct()
   
   historic_hashes <- hashed_historic_table %>% 
     select(key_hash, value_hash, effective_date, expiry_date)  
@@ -89,7 +90,7 @@ if (!have_historic & have_load) {
   out <- new_hashes %>% 
     rename(effective_date = load_date) %>% 
     mutate(expiry_date = INF_DATE) %>% 
-    bind_rows(capped_hashes, .) %>%
+    bind_rows(capped_hashes, .) %>% 
     left_join(., key_value_lookup, by = join_by(key_hash, value_hash)) %>% 
     arrange(key_hash, effective_date) %>% 
     select(-c(key_hash, value_hash)) %>% 

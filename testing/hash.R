@@ -4,10 +4,8 @@ make_hash <- function(.data, key_cols) {
   
   all_cols <- .data %>%  
     colnames() %>% 
-    setdiff(ignore_cols)
-  
-  all_cols
-  
+    setdiff(ignore_cols) 
+    
   value_cols <- setdiff(all_cols, key_cols)
   
   if (length(all_cols) == length(value_cols)) {
