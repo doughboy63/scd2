@@ -1,0 +1,16 @@
+id,name,join_date,department,performance_score,monthly_sales,effective_date,expiry_date,current_record
+1,Liam Smith,1/15/2023,Engineering,8.5,0,2026-01-01,9999-12-31,TRUE
+2,Noah Johnson,11/4/2022,Sales,7.2,4100,2026-01-01,9999-12-31,TRUE
+3,Oliver Williams,2/19/2024,Marketing,9.1,0,2026-01-01,9999-12-31,TRUE
+4,Elijah Brown,5/23/2021,Finance,6.8,0,2026-01-01,9999-12-31,TRUE
+5,James Jones,7/11/2023,Sales,8,5100,2026-01-01,9999-12-31,TRUE
+6,William Garcia,9/30/2022,Finance,7.9,0,2026-01-01,9999-12-31,TRUE
+7,Benjamin Miller,1/8/2025,Engineering,8.4,0,2026-01-01,9999-12-31,TRUE
+8,Lucas Davis,3/14/2023,Sales,5.5,2800,2026-01-01,9999-12-31,TRUE
+9,Henry Rodriguez,12/12/2021,Marketing,8.8,0,2026-01-01,9999-12-31,TRUE
+10,Alexander Martinez,6/1/2024,Support,7.1,0,2026-01-01,9999-12-31,TRUE
+11,Mia Hernandez,8/24/2023,HR,9.5,0,2026-01-01,9999-12-31,TRUE
+12,Ava Lopez,4/17/2022,HR,6.2,0,2026-01-01,9999-12-31,TRUE
+13,Gonzalez Isabella,10/9/2021,Engineering,8.3,0,2026-01-01,9999-12-31,TRUE
+14,Sophia Wilson,11/12/2024,Marketing,7.6,0,2026-01-01,9999-12-31,TRUE
+15,Charlotte Anderson,5/19/2023,Sales,4.9,1900,2026-01-01,9999-12-31,TRUE
