@@ -47,7 +47,6 @@ make_hash <- function(.data, key_cols) {
   }  
 }
 
-
 csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
   if (!is.Date(run_date)) {
     log_fatal("The run_date parameter is not a date!")
@@ -110,6 +109,19 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
     hashed_load_table <- load_table %>% 
       mutate(load_date = run_date) %>% 
       make_hash(key_cols)
+    
+    # need to verify that key hashes are unique in load table
+    duplicate_load_key_hashes <- hashed_load_table %>% 
+      group_by(key_hash) %>% 
+      summarize(
+        n_key = n(),
+        .groups = "drop"
+      ) %>% 
+      filter(n_key > 1)
+    
+    if (nrow(duplicate_load_key_hashes) > 0) {
+      log_fatal("Duplicate key hashes detected in load file!")
+    } 
     
     hashed_historic_table <- historic_table %>% 
       make_hash(key_cols)
