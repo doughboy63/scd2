@@ -20,11 +20,11 @@ p_load(tidyverse, fs, janitor, digest, logger)
 log_layout(layout_glue_colors)
 
 
-
 # Functions --------------------------------------------------------------------
 
-# hash function allows to easy comparison of key and value columns
 make_hash <- function(.data, key_cols) {
+  # helper function:  allows for easy comparison of key and value columns in the csv_scd2 function
+  
   ignore_cols <- c("effective_date", "expiry_date", "load_date", "current_record")
   
   all_cols <- .data %>%  
