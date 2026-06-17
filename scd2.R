@@ -47,43 +47,38 @@ make_hash <- function(.data, key_cols) {
   }  
 }
 
-csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
+scd2 <- function (historic_table = tibble(), load_table = tibble(), key_cols, run_date = today()) {
   if (!is.Date(run_date)) {
     log_fatal("The run_date parameter is not a date!")
   }
   
   # Checking for historic file.  If I have it, then check that it is well formed.
-  have_historic <- file_exists(historic_file)
+  have_historic <- nrow(historic_table) > 0
   if (have_historic) {
-    historic_table <- read_csv(historic_file, show_col_types = FALSE) %>% 
-      clean_names() 
-    
     historic_cols <- colnames(historic_table)
     required_historic_cols <- c(key_cols, "effective_date", "expiry_date", "current_record")
     
     if (!all(required_historic_cols %in% historic_cols)) {
-      log_fatal(paste0("Historic file (", historic_file, ") is malformed. Table must have all key columns, effective_date, expiry_date, current_record!"))
+      log_fatal(paste0("Historic table (", historic_table, ") is malformed. Table must have all key columns, effective_date, expiry_date, current_record!"))
     } 
     
     value_cols = setdiff(historic_cols, required_historic_cols)
   } else {
-    log_warn("The historic file targeted (", historic_file, ") cannot be found!")
+    log_warn("No historic table provided!")
   }
   
   # Checking for load file.  If I have it, then check that it is well formed.
-  have_load <- file_exists(load_file)
+  have_load <- nrow(load_table) > 0
   if (have_load) {
-    load_table <- read_csv(load_file, show_col_types = FALSE) %>% 
-      clean_names() 
     
     load_cols <- colnames(load_table)
     
     if (!all(key_cols %in% load_cols)) {
-      log_fatal(paste0("Load file (", load_file, ") is malformed. Table must have all key columns!"))
+      log_fatal(paste0("Load file is malformed. Table must have all key columns!"))
       
     } 
   } else {
-    log_fatal("The load file targeted (", load_file, ") cannot be found!")
+    log_fatal("Load table does not exist!")
   }
   
   # default infinity date
@@ -91,7 +86,7 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
   
   # If I don't have a historic file, turn the load file into a historic file. 
   if (!have_historic & have_load) {
-    log_info("Converting load table (", load_file, ") into the historic table.")
+    log_info("Converting load table into the historic table.")
     
     out <- load_table %>%   
       mutate(effective_date = run_date) %>% 
@@ -103,7 +98,7 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
     required_load_cols <- c(key_cols, value_cols)
     
     if (!all(required_load_cols %in% load_cols)) {
-      log_fatal(paste0("Load file (", load_file, ") is malformed. Table must have all key columns!"))
+      log_fatal(paste0("Load table is malformed. Table must have the same key and value columns as the historic table!"))
     }
     
     hashed_load_table <- load_table %>% 
@@ -154,9 +149,9 @@ csv_scd2 <- function (historic_file, load_file, key_cols, run_date = today()) {
       mutate(current_record = expiry_date == INF_DATE) %>%  
       relocate(c("effective_date", "expiry_date", "current_record"), .after = last_col())
     
-    return(out)
   }
-    
+  
+  return(out)
     
 }
 
